@@ -1,10 +1,16 @@
-function repo2site(repo, branch, readme)
+function repo2site(repo, branch, readme, stem)
 {
-	if (typeof branch === 'undefined') branch = 'master';
-	if (typeof readme === 'undefined') readme = 'README.md';
+	// whether or not to push state to history
+	var noHistory = true;
 
-	var stem = 'https://raw.githubusercontent.com/'
-		+ repo + '/' + branch + '/' ;
+	// parse parameters, use defaults if not provided
+	branch = branch || 'master';
+	readme = readme || 'README.md';
+	// stem can handle {repo} and {branch} tokens
+	stem = (stem || 'https://raw.githubusercontent.com/{repo}/{branch}/')
+		.replace(/\{repo\}/ig, repo)
+		.replace(/\{branch\}/ig, branch)
+	;
 
 	// link was clicked; load page via AJAX
 	function linkClicked(e)
@@ -14,7 +20,7 @@ function repo2site(repo, branch, readme)
 	}
 
 	// get markdown page via AJAX and handle translation
-	function getPage(href, replaceState) {
+	function getPage(href) {
 		Ajax
 			.request({
 				url: stem + href
@@ -27,11 +33,10 @@ function repo2site(repo, branch, readme)
 						'<pre><code>$1</code></pre>')
 				;
 
-				if (replaceState === true)
-					history.replaceState({ url: href }, '', '#/' + href);
-				else
+				if (!noHistory)
 					history.pushState({ url: href }, '', '#/' + href);
 
+				noHistory = false;
 				document.body.innerHTML = html;
 				document.title = document.querySelector('h1').innerText;
 
@@ -60,14 +65,15 @@ function repo2site(repo, branch, readme)
 	// "back" button pressed; handle state transition
 	function popState(e)
 	{
+		noHistory = true;
 		getPage(history.state === null ? readme : history.state.url);
 	}
 
 	// has a page been specified? if not, fallback to README
-	if (! /^#\/.+/i.exec(location.hash) && history.state === null)
-		getPage(readme, true);
+	if (! /^#\/.+/i.exec(location.hash))
+		getPage(readme);
 	else
-		getPage(location.hash.replace(/^#\//i, ''), history.state === null);
+		getPage(location.hash.replace(/^#\//i, ''));
 
 	// window bindings
 	addEventListener('popstate', popState);
