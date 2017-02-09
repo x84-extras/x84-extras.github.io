@@ -12,9 +12,24 @@ function repo2site(repo, branch, readme, stem)
 		.replace(/\{branch\}/ig, branch)
 	;
 
-	// link was clicked; load page via AJAX
+	// link was clicked; load page via AJAX or scroll to anchor target
 	function linkClicked(e)
 	{
+		var href = this.getAttribute('href');
+
+		// standard anchor
+		if (href.indexOf('#/') < 0) {
+			var
+				anchor = href.replace(/^#/, '')
+				, el = document.querySelector('*[name="' + anchor + '"]')
+			;
+
+			window.scrollTo(0, el.offsetTop);
+			e.preventDefault();
+			return;
+		}
+
+		// load new page
 		getPage(this.getAttribute('href').replace(/^#\//, ''));
 		e.preventDefault();
 	}
@@ -48,15 +63,34 @@ function repo2site(repo, branch, readme, stem)
 				}
 
 				// handle link translation and click binding
-				var links = document.querySelectorAll('a[href$=".md"]');
+				var links = document.querySelectorAll('a');
 
 				for (var i = 0; i < links.length; i++) {
 					var ahref = links[i].getAttribute('href');
 
+					// link has protocol; ignore
 					if (/^https?:\/\//i.exec(ahref)) continue;
 
-					links[i].setAttribute('href', '#/' + ahref);
-					links[i].addEventListener('click', linkClicked);
+					// only handle hash links
+					if (ahref.indexOf('#') === 0) {
+						if (/\.md$/.exec(ahref))
+							links[i].setAttribute('href', '#/' + ahref);
+
+						links[i].addEventListener('click', linkClicked);
+					}
+				}
+
+				// handle heading anchors
+				var heads = document.querySelectorAll('h1, h2, h3, h4, h5');
+
+				for (var i = 0; i < heads.length; i++) {
+					var name = heads[i].innerText
+						.toLowerCase()
+						.replace(/[^- _a-z0-9]+/g, '')
+						.replace(/\s+/g, '-')
+					;
+
+					heads[i].setAttribute('name', name);
 				}
 			})
 		;
