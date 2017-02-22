@@ -71,11 +71,14 @@ function repo2site(repo, branch, readme, stem)
 					// link has protocol; ignore
 					if (/^https?:\/\//i.exec(ahref)) continue;
 
-					// only handle hash links
-					if (ahref.indexOf('#') === 0) {
-						if (/\.md$/.exec(ahref))
-							links[i].setAttribute('href', '#/' + ahref);
+					if (/[^\/].*\.md$/.exec(ahref))
+					{
+						links[i].setAttribute('href', '#/' + ahref);
+						links[i].addEventListener('click', linkClicked);
+					}
 
+					// only intercept hash links
+					if (ahref.indexOf('#') === 0) {
 						links[i].addEventListener('click', linkClicked);
 					}
 				}
